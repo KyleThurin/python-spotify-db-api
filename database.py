@@ -1,6 +1,6 @@
-import os
-import psycopg2
 from dotenv import load_dotenv
+import psycopg2
+import os
 
 # Load environment variables from a .env file
 load_dotenv()
@@ -42,7 +42,6 @@ def get_all_dad_jokes(user_id):
                 cur.execute("SELECT joke FROM joke WHERE user_id = %s", (user_id,))
                 joke_data = cur.fetchall()
                 return joke_data
-
         except psycopg2.Error as e:
             print(f"Error finding user: {e}")
             return None
@@ -70,15 +69,14 @@ def insert_joke(user_id, joke):
     return False
 
 def insert_artist(result, user_id):
-    artist_name = result['name']
-    followers = result['followers']['total']
-    artist_spotify_id = result['id']
-    conn = get_db_connection()
+
+    artist_name         = result['name']
+    followers           = result['followers']['total']
+    artist_spotify_id   = result['id']
+    conn                = get_db_connection()
+
     if conn:
         try:
-            #   artist_name varchar(256),
-            #   followers int,
-            #   artist_spotify_id varchar(256)
             with conn.cursor() as cur:
                 cur.execute(
                     "INSERT INTO artist (artist_name, followers, artist_spotify_id) VALUES (%s, %s, %s)",
@@ -120,6 +118,10 @@ def insert_user(username, hashed_password):
                 )
                 conn.commit()
                 return True
+        except psycopg2.IntegrityError:
+            print(f"Error: Username '{username}' already exists.")
+            conn.rollback()
+            return False
         except psycopg2.Error as e:
             print(f"Failed to register user: {e}")
             conn.rollback()

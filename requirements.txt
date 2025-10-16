@@ -1,0 +1,10 @@
+# ==============================================================================
+# File: requirements.txt
+# This file lists the Python packages required for the application.
+#  pip intall -r requirements.txt
+# ==============================================================================
+
+psycopg2-binary
+python-dotenv
+bcrypt
+requests

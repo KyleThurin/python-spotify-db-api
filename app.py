@@ -14,15 +14,16 @@ def register_user():
     password         = getpass.getpass("Enter a password: ")# Indexes the password entered
     confirm_password = getpass.getpass("Confirm password: ")# Indexes the password entered
 
+    if not username:
+        print("Error: Username cannot be empty.")
+        return
+
     # If 'password' does NOT match 'confirm_password'
     if password != confirm_password:
         # Displays text
         print("Error: Passwords do not match.")
         return
 
-    # bcrypt.gensalt() generates a new salt each time.
-    # The salt is automatically included in the resulting hash string,
-    # which is the standard and most secure way to use bcrypt.
     hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
 
     # If the 'username' and hashed password are inserted into the database
@@ -35,13 +36,14 @@ def register_user():
 def logged_in_menu(user_id):
     while True:
         # Displays menu text
-        print("--- Logged In Menu ---")
+        print("\n--- Logged In Menu ---")
         print("1. Tell me a Joke")
         print("2. List all my favorite Jokes")
         print("3. Search Spotify music by artist name")
-        print("4. Return to main menu")
+        print("4. List all my favorite artists")
+        print("5. Return to main menu")
 
-        choice = input("Enter your choice (1 - 4): ") # Indexes the user input
+        choice = input("Enter your choice (1 - 5): ") # Indexes the user input
         # If the user input equal 1
         if choice == '1':
             call_dad_joke(user_id)
@@ -50,6 +52,9 @@ def logged_in_menu(user_id):
         elif choice == '3':
             get_spotify_music (user_id)
         elif choice == '4':
+            # TODO: Add method to get favorite artists
+            get_spotify_music (user_id)
+        elif choice == '5':
             print("Returning to main menu")
             break
         else:
@@ -58,47 +63,65 @@ def logged_in_menu(user_id):
 
 def call_dad_joke(user_id):
 
-    print("Let me tell you something 'punny'!")
+    print("\nLet me tell you something... 'punny'!")
     joke = dad_joke_service.getDadJoke()# Indexes a dad joke
-    print(joke)                         # Displays the joke
+    if joke:
+        print(joke)
+        user_input = input("Do you wish to save the joke? (y/n) ") # Indexes the user input
 
-    user_input = input("Do you wish to save the joke? (y/n) ") # Indexes the user input
-    # If the user input is equal to 'y'
-    if user_input.startswith('y'):
-        # Displays text
-        print("Saving the joke to database")
-        database.insert_joke(user_id, joke)
+        # If the user input is equal to 'y'
+        if user_input.startswith('y'):
+            # Displays text
+            print("Saving the joke to database")
+            if database.insert_joke(user_id, joke):
+                print("The joke was saved successfully!")
+            else:
+                print("Failed to save the joke.")
 
 def get_all_dad_jokes(user_id):
-    print("getting all dad jokes")
+    print("\n--- Your Favorite Dad Jokes ---")
     jokes = database.get_all_dad_jokes(user_id) # Indexes the jokes saved by the current user
-    # Loop through the list of jokes saved
-    for joke in jokes:
-        # Displays the current joke
-        print(joke[0])
+
+    if jokes:
+        # Loop through the list of jokes saved
+        for idx, joke_tuple in enumerate(jokes):
+            # Accessing the joke text (the first element of the tuple)
+            print(f"{idx + 1}. {joke_tuple[0]}")
+    else:
+        print("You haven't saved any jokes yet!")
 
 def get_spotify_music(user_id):
-    print("Spotify music by artist: ")
+    print("\n--- Spotify Artist Search ---")
 
     token       = spotify_service.get_token()                           # Indexes the token
+    if not token:
+        print("Could not retrieve Spotify token.")
+        return
     artist_name = input('Enter the artist to search for: ')             # Indexes the user input
     result      = spotify_service.search_for_artist(token, artist_name) # Searches for the artest using the user input
     artist_id   = result["id"]                                          # Indexes the 'id' of the result
-
     tracks      = spotify_service.get_songs_by_artist(token, artist_id) # Searches for the songs for the artest
 
-    print("For artist: " + artist_name)
+    print(f"\nTop Tracks for {result.get('name')}:")
 
-    # Loops through 'tracks'
-    for idx, song in enumerate(tracks):
-        # Displays the current 'song' and index value
-        print(f"{idx+1}. {song['name']}")
+    if tracks:
+        # Loops through 'tracks'
+        for idx, song in enumerate(tracks):
+            # Displays the current 'song' and index value
+            print(f"{idx+1}. {song['name']}")
+        else:
+            print("No tracks found.")
 
     user_input = input("Wish to save artist to favorites? (y/n) ") # Indexes the user input
+
     # If the user input is equal to 'y'
     if user_input.startswith('y'):
         print("Saving the artist to database")
-        database.insert_artist(result, user_id) # Adds the artist's ID to the database
+        # Pass the full result dictionary to the database function
+        if database.insert_artist(result, user_id):
+            print("Artist saved successfully!")
+        else:
+            print("Failed to save artist.")
 
 def login_user():
     """
@@ -118,6 +141,7 @@ def login_user():
         # If the user password matches the password entered by the user
         if bcrypt.checkpw(password.encode('utf-8'), hashed_password.encode('utf-8')):
             print(f"\nWelcome back, {username}! You are logged in.")
+            logged_in_menu(user_id) # Calls for the logged-in menu
         else:
             print("\nError: Invalid password.")
     else:
@@ -127,7 +151,6 @@ def main():
     """
     Main function to display the menu and handle user input.
     """
-
     database.create_users_table() # Creates a database
     # - Ensures the database exists before running the app
 
