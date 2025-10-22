@@ -2,7 +2,6 @@ from dotenv import load_dotenv
 import psycopg2
 import os
 
-# Load environment variables from a .env file
 load_dotenv()
 
 def get_db_connection():
@@ -147,50 +146,11 @@ def link_artist_to_user(artist_id, user_id, cur):
         )
         return True
     except psycopg2.IntegrityError:
-        # This means the user already has this artist as a favorite, which is fine.
         print("Artist is already a favorite for this user.")
         return True
     except psycopg2.Error as e:
         print(f"Failed to link artist to user: {e}")
         return False
-
-"""
-def insert_artist(result, user_id):
-
-    artist_name         = result['name']
-    followers           = result['followers']['total']
-    artist_spotify_id   = result['id']
-    conn                = get_db_connection()
-
-    if conn:
-        try:
-            with conn.cursor() as cur:
-                cur.execute(
-                    "INSERT INTO artist (artist_name, followers, artist_spotify_id) VALUES (%s, %s, %s)",
-                    (artist_name, followers, artist_spotify_id)
-                )
-                conn.commit()
-                cur.execute(
-                    "SELECT artist_id FROM artist WHERE artist_spotify_id = %s",
-                    (artist_spotify_id, )
-                )
-                conn.commit()
-                artist_id = cur.fetchone()
-
-                cur.execute(
-                    "INSERT INTO artist_users (artist_id, user_id) VALUES (%s, %s)",
-                    (artist_id, user_id)
-                )
-                conn.commit()
-                return True
-        except psycopg2.Error as e:
-            print(f"Failed to register user: {e}")
-            conn.rollback()
-            return False
-        finally:
-            conn.close()
-    return False
-"""
 
 def insert_artist(result, user_id):
     artist_name         = result['name']
@@ -232,18 +192,17 @@ def insert_artist(result, user_id):
                 "INSERT INTO artist (artist_name, followers, artist_spotify_id) VALUES (%s, %s, %s) RETURNING artist_id",
                 (artist_name, followers, artist_spotify_id)
             )
-            artist_id = cur.fetchone()[0] # Only necessary if the 'insert' was successful
+            artist_id = cur.fetchone()[0]
 
             # Link the new artist to the user
             if link_artist_to_user(artist_id, user_id, conn, cur):
-                conn.commit()  # Commit both the artist insert and the linking
+                conn.commit()
                 return True
             else:
                 conn.rollback()
                 return False
 
     except psycopg2.IntegrityError:
-        # Catching this is a fallback in case of a race condition, though the check above should prevent it
         print(f"Error: Artist with Spotify ID {artist_spotify_id} was inserted just now by another process.")
         conn.rollback()
         return False
