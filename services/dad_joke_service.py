@@ -1,10 +1,13 @@
 import requests
 
+# UPDATE: The index URL is now constant
+DAD_JOKE_URL = "https://icanhazdadjoke.com"
 
 def getDadJoke():
     """Fetches a random dad joke from icanhazdadjoke.com."""
 
-    url     = "https://icanhazdadjoke.com"   # Indexes the string for the website
+    #url     = "https://icanhazdadjoke.com"   # Indexes the string for the website
+    url     = DAD_JOKE_URL
     headers = {"Accept": "application/json"} # Creates a dictionary
 
     try:
@@ -13,5 +16,5 @@ def getDadJoke():
         joke_data   = response.json()                   # Indexes the joke
         return joke_data["joke"]                        # Returns 'joke'
     except requests.RequestException as e:
-        print(f"Error getting joke: {e}")
+        print(f"\nError getting joke: {e}")
         return None

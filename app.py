@@ -52,14 +52,13 @@ def logged_in_menu(user_id):
         elif choice == '3':
             get_spotify_music (user_id)
         elif choice == '4':
-            # TODO: Add method to get favorite artists
-            get_spotify_music (user_id)
+            list_favorite_artists(user_id)
         elif choice == '5':
             print("Returning to main menu")
             break
         else:
             print("***Invalid Entry***")
-            print("Please enter 1 - 4")
+            print("Please enter 1 - 5")
 
 def call_dad_joke(user_id):
 
@@ -99,18 +98,22 @@ def get_spotify_music(user_id):
         return
     artist_name = input('Enter the artist to search for: ')             # Indexes the user input
     result      = spotify_service.search_for_artist(token, artist_name) # Searches for the artest using the user input
+    # Error Handling for Artist Search (Exit the function if artist not found)
+    if not result:
+        print(f"No results found for '{artist_name}'.")
+        print("\nExiting.")
+        return
     artist_id   = result["id"]                                          # Indexes the 'id' of the result
     tracks      = spotify_service.get_songs_by_artist(token, artist_id) # Searches for the songs for the artest
 
-    print(f"\nTop Tracks for {result.get('name')}:")
-
     if tracks:
+        print(f"\nTop Tracks for {result.get('name')}:")
         # Loops through 'tracks'
         for idx, song in enumerate(tracks):
             # Displays the current 'song' and index value
             print(f"{idx+1}. {song['name']}")
-        else:
-            print("No tracks found.")
+    else:
+        print("\nNo tracks found for this artist.")
 
     user_input = input("Wish to save artist to favorites? (y/n) ") # Indexes the user input
 
@@ -122,6 +125,17 @@ def get_spotify_music(user_id):
             print("Artist saved successfully!")
         else:
             print("Failed to save artist.")
+
+def list_favorite_artists(user_id):
+    print("\n--- Your Favorite Artists ---")
+    artists = database.get_favorite_artists(user_id)
+
+    if artists:
+        for idx, (name, followers) in enumerate(artists):
+            followers_formatted = f"{followers:,}"
+            print(f"{idx + 1}. {name} (Followers: {followers_formatted})")
+    else:
+        print("You haven't saved any favorite artists yet!")
 
 def login_user():
     """
